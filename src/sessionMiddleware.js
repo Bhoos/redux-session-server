@@ -1,5 +1,6 @@
 import { batchActions } from 'redux-batched-actions';
 
+import Actions from './Actions';
 import Session from './Session';
 
 export default function createSessionMiddleware({
@@ -7,10 +8,7 @@ export default function createSessionMiddleware({
 }) {
   return function createSessionManager(onNewSession) {
     const sessions = [];
-    const actions = [];
-
-    // a serially incrementing identifier for actions
-    let gSerialId = 0;
+    const actions = new Actions();
 
     return function sessionMiddleware(store) {
       // Create an array of userAction dispatchers, these need to be bound
@@ -45,7 +43,7 @@ export default function createSessionMiddleware({
           s.close();
         }
 
-        const session = new Session(id, timestamp, serialId, client);
+        const session = new Session(id, timestamp, client);
 
         // Get some validation from the application for every new session
         try {
@@ -60,18 +58,9 @@ export default function createSessionMiddleware({
         sessions.push(session);
 
         // Send all the actions collected so far in a batch
-        const batch = [];
-        for (let i = actions.length - 1; i >= 0; i -= 1) {
-          const action = actions[i];
-          if (action.serialId > serialId) {
-            batch.unshift(sanitize(action.action, session));
-          } else {
-            break;
-          }
-        }
-
+        const batch = actions.fetchAfter(serialId, action => sanitize(action, session));
         if (batch.length > 0) {
-          session.dispatch(batchActions(batch));
+          session.dispatch(batchActions(batch), actions.lastSerialId);
         }
 
         return userActionsDispatchers.reduce((res, d) => ({
@@ -84,24 +73,24 @@ export default function createSessionMiddleware({
         const res = next(action);
 
         // Pre process the action
-        if (consume(action, actions)) {
-          // The pre process mechanism need to return a action
-          // Some actions might not need to be recorded, like
-          // when the player leaves, the preProcess mechanism
-          // removes the join action, and the leave doesn't need
-          // to be stored at all
-          gSerialId += 1;
-          actions.push({
-            serialId: gSerialId,
-            action,
-          });
+        // The pre process mechanism need to return a action
+        // Some actions might not need to be recorded, like
+        // when the player leaves, the preProcess mechanism
+        // removes the join action, and the leave doesn't need
+        // to be stored at all
+        const serialId = consume(action, actions) && actions.push(action);
+
+        if (__DEV__ && serialId === undefined) {
+          const err = `Please make sure you have returned either null or an action object from preProcess hook for ${action.type}`;
+          console.error(err);
+          throw new Error(err);
         }
 
         // Send action to each and every client after sanitization
         sessions.forEach((session) => {
           const a = sanitize(action, session);
           if (a) {
-            session.dispatch(a);
+            session.dispatch(a, serialId);
           }
         });
 
