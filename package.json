@@ -3,6 +3,9 @@
   "version": "1.0.1",
   "description": "Redux based server side session management",
   "main": "__dist__/index.js",
+  "files": [
+    "__dist__"
+  ],
   "scripts": {
     "test": "jest",
     "build": "babel src --out-dir __dist__ --ignore node_modules,__dist__,__mocks__,__benchmarking__",
