@@ -88,7 +88,7 @@ export default function createSessionMiddleware({
         session.close();
 
         // After the session has been removed completely, let the applicatio layer know
-        if (onDestroySession) onDestroySession(session);
+        if (onDestroySession) onDestroySession(session, store.getState, store.dispatch);
 
         return session;
       };
