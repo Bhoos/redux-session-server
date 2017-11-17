@@ -1,6 +1,6 @@
 {
   "name": "redux-session-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Redux based server side session management",
   "main": "__dist__/index.js",
   "scripts": {
