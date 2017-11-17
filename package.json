@@ -4,7 +4,11 @@
   "description": "Redux based server side session management",
   "main": "__dist__/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "build": "babel src --out-dir __dist__ --ignore node_modules,__dist__,__mocks__,__benchmarking__",
+    "clean": "rimraf __dist__",
+    "lint": "eslint src",
+    "prepublish": "npm run lint && npm run test && npm run clean && npm run build"
   },
   "repository": {
     "type": "git",
