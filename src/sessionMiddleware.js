@@ -16,13 +16,16 @@ export default function createSessionMiddleware({
       // Create an array of userAction dispatchers, these need to be bound
       // to the specific session while creating the sessions
       const userActionNames = getUserActionNames();
-      const userActionsDispatchers = userActionNames.map(name => (session, ...args) => {
-        try {
-          store.dispatch(getUserAction(name)(session, ...args));
-        } catch (err) {
-          session.dispatchError(err.message);
-        }
-      });
+      const userActionsDispatchers = userActionNames.map(name => ({
+        name,
+        fn: (session, ...args) => {
+          try {
+            store.dispatch(getUserAction(name)(session, ...args));
+          } catch (err) {
+            session.dispatchError(err.message);
+          }
+        },
+      }));
 
       /**
        * Create a server side session for client
@@ -33,7 +36,7 @@ export default function createSessionMiddleware({
        * @param {*} serialId The client side progress
        * @param {*} client The client interface
        */
-      createSessionManager.createSession = (id, timestamp, serialId, client) => {
+      sessionMiddleware.createSession = (id, timestamp, serialId, client) => {
         const idx = sessions.findIndex(s => s.id === id);
         if (idx >= 0) {
           const s = sessions.splice(idx, 1)[0];
@@ -46,7 +49,7 @@ export default function createSessionMiddleware({
 
         // Get some validation from the application for every new session
         try {
-          onNewSession(store.getState, store.dispatch);
+          onNewSession(session, store.getState, store.dispatch);
         } catch (err) {
           session.dispatchError(err.message);
           session.close();
@@ -71,7 +74,10 @@ export default function createSessionMiddleware({
           session.dispatch(batchActions(batch));
         }
 
-        return userActionsDispatchers.map(d => d.bind(null, session));
+        return userActionsDispatchers.reduce((res, d) => ({
+          ...res,
+          [d.name]: d.fn.bind(null, session),
+        }), {});
       };
 
       return next => (action) => {
