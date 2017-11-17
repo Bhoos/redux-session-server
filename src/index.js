@@ -28,12 +28,12 @@ const registrar = {
   },
 };
 
-export function registerUserAction(name) {
-  userActions[name] = true;
+export function registerUserAction(name, action) {
+  userActions[name] = action;
 }
 
 export function registerActionHook(type, hook) {
   actionHooks[type] = hook;
 }
 
-export const sessionMiddleware = createSessionMiddleware(registrar);
+export const createSessionManager = createSessionMiddleware(registrar);
