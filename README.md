@@ -21,13 +21,14 @@ const onDestroySession = (session, getState, dispatch) => {
 }
 
 const sessionManager = createSessionManager(onNewSession, onDestroySession);
+const store = createStore(reducer, applyMiddleware(thunk, sessionManager));
 
 // Create sessions via sessionManager for every new user connection
 // The userId uniquely identifies the session
 // Timestamp could be used for changing timestamps through preProcessing action hooks
 // serialId could be used to dispatch only actions that are available after the given id
 // client needs to provide a 'close' and 'dispatch' mechanisms.
-const clientSession = sessionManager.create(userId, Date.now(), 0, client);
+const clientSession = sessionManager.createSession(userId, Date.now(), 0, client);
 
 // the clientSession can then be used to perform any user Action
 clientSession.join(name, picture);
