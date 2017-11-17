@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 class Actions {
   constructor() {
     this.serialId = 0;
@@ -9,19 +8,27 @@ class Actions {
     return this.all.length;
   }
 
+  get lastSerialId() {
+    return this.serialId;
+  }
+
   push(action) {
     this.serialId += 1;
     // eslint-disable-next-line no-param-reassign
-    action._serial = this.serialId;
-    return this.all.push(action);
+    this.all.push({
+      id: this.serialId,
+      action,
+    });
+
+    return this.serialId;
   }
 
   fetchAfter(serialId, fn) {
     const res = [];
     for (let i = this.all.length - 1; i >= 0; i -= 1) {
-      const action = this.all[i];
-      if (action._serial > serialId) {
-        res.unshift(fn(action, action._serial));
+      const { id, action } = this.all[i];
+      if (id > serialId) {
+        res.unshift(fn(action, id));
       } else {
         break;
       }
@@ -32,10 +39,11 @@ class Actions {
 
   removeOneForward(fn) {
     for (let i = 0; i < this.all.length; i += 1) {
-      const action = this.all[i];
-      if (fn(action, action._serial)) {
+      const { id, action } = this.all[i];
+      if (fn(action, id)) {
         // Request to remove
-        return this.all.splice(i, 1)[0];
+        this.all.splice(i, 1);
+        return action;
       }
     }
 
@@ -44,9 +52,10 @@ class Actions {
 
   removeOne(fn) {
     for (let i = this.all.length - 1; i >= 0; i -= 1) {
-      const action = this.all[i];
-      if (fn(action, action._serial)) {
-        return this.all.splice(i, 1)[0];
+      const { id, action } = this.all[i];
+      if (fn(action, id)) {
+        this.all.splice(i, 1);
+        return action;
       }
     }
 
@@ -56,8 +65,8 @@ class Actions {
   remove(fn) {
     let count = 0;
     for (let i = this.all.length - 1; i >= 0; i -= 1) {
-      const action = this.all[i];
-      if (fn(action, action._serial)) {
+      const { id, action } = this.all[i];
+      if (fn(action, id)) {
         this.all.splice(i, 1);
         count += 1;
       }

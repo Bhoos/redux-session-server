@@ -4,8 +4,9 @@ describe('Check if the opaque Actions collection', () => {
   test('pushing', () => {
     const actions = new Actions();
     actions.push({ type: 'T1' });
-    actions.push({ type: 'T2' });
+    const last = actions.push({ type: 'T2' });
     expect(actions.length).toBe(2);
+    expect(actions.lastSerialId).toBe(last);
   });
 
   test('fetching', () => {
@@ -17,7 +18,6 @@ describe('Check if the opaque Actions collection', () => {
     expect(actions.fetchAfter(1, a => a).length).toBe(1);
     expect(actions.fetchAfter(1, a => a)[0]).toMatchObject({
       type: 'T2',
-      _serial: 2,
     });
     expect(actions.fetchAfter(2, a => a).length).toBe(0);
   });
