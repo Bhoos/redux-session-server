@@ -6,7 +6,7 @@ import Session from './Session';
 export default function createSessionMiddleware({
   getUserAction, getUserActionNames, consume, sanitize,
 }) {
-  return function createSessionManager(onNewSession) {
+  return function createSessionManager(onNewSession, onDestroySession) {
     const sessions = [];
     const actions = new Actions();
 
@@ -35,13 +35,7 @@ export default function createSessionMiddleware({
        * @param {*} client The client interface
        */
       sessionMiddleware.createSession = (id, timestamp, serialId, client) => {
-        const idx = sessions.findIndex(s => s.id === id);
-        if (idx >= 0) {
-          const s = sessions.splice(idx, 1)[0];
-          // Close the session forcefully
-          s.dispatchError('Logged in from another client');
-          s.close();
-        }
+        sessionMiddleware.destroySession(id, 'Logged in from another client');
 
         const session = new Session(id, timestamp, client);
 
@@ -67,6 +61,36 @@ export default function createSessionMiddleware({
           ...res,
           [d.name]: d.fn.bind(null, session),
         }), {});
+      };
+
+      /**
+       * Destroys an existing session
+       *
+       * @param {*} id The id associated with the session
+       * @param {*} reason The reason to send back to client as error if provided
+       */
+      sessionMiddleware.destroySession = (id, reason) => {
+        // Make sure the session exists
+        const idx = sessions.findIndex(s => s.id === id);
+        if (idx === -1) {
+          return null;
+        }
+
+        // Remove the session
+        const session = sessions.splice(idx, 1)[0];
+
+        // Dispatch the reason to destroy if provided
+        if (reason) {
+          session.dispatchError(reason);
+        }
+
+        // Initiate closing the session
+        session.close();
+
+        // After the session has been removed completely, let the applicatio layer know
+        if (onDestroySession) onDestroySession(session);
+
+        return session;
       };
 
       return next => (action) => {
