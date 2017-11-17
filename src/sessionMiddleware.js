@@ -84,11 +84,11 @@ export default function createSessionMiddleware({
           session.dispatchError(reason);
         }
 
-        // Initiate closing the session
-        session.close();
-
         // After the session has been removed completely, let the applicatio layer know
         if (onDestroySession) onDestroySession(session, store.getState, store.dispatch);
+
+        // Initiate closing the session
+        session.close();
 
         return session;
       };
