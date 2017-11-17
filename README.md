@@ -87,7 +87,7 @@ registerActionHook('LEAVE', {
   // which are all needed on server, but should not be passed on to the client. Or you
   // might want to change the timestamps of your timer, so all the clients behave exactly
   // regardles of what time they have.
-  sanitze: (action, session) => ({
+  sanitize: (action, session) => ({
     ...action,
     payload: {
       [session.id]: action.payload[session.id],
