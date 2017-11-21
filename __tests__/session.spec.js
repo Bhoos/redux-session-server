@@ -32,11 +32,11 @@ describe('session middleware specification check', () => {
     });
     expect(mockOnNewSession.mock.calls.length).toBe(2);
 
-    session1.join('John Doe');
+    session1.execute('join', 'John Doe');
     expect(mockDispatch1.mock.calls.length).toBe(1);
     expect(mockDispatch2.mock.calls.length).toBe(1);
 
-    session2.join('Jane Doe');
+    session2.execute('join', 'Jane Doe');
     expect(mockDispatch1.mock.calls.length).toBe(3); // Start timer is run
     expect(mockDispatch2.mock.calls.length).toBe(3); // Start timer is run
 

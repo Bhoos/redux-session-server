@@ -3,28 +3,12 @@ import { batchActions } from 'redux-batched-actions';
 import Actions from './Actions';
 import Session from './Session';
 
-export default function createSessionMiddleware({
-  getUserAction, getUserActionNames, consume, sanitize,
-}) {
+export default function createSessionMiddleware({ getUserAction, consume, sanitize }) {
   return function createSessionManager(onNewSession, onDestroySession) {
     const sessions = [];
     const actions = new Actions();
 
     return function sessionMiddleware(store) {
-      // Create an array of userAction dispatchers, these need to be bound
-      // to the specific session while creating the sessions
-      const userActionNames = getUserActionNames();
-      const userActionsDispatchers = userActionNames.map(name => ({
-        name,
-        fn: (session, ...args) => {
-          try {
-            store.dispatch(getUserAction(name)(session, ...args));
-          } catch (err) {
-            session.dispatchError(err.message);
-          }
-        },
-      }));
-
       /**
        * Create a server side session for client
        *
@@ -57,10 +41,16 @@ export default function createSessionMiddleware({
           session.dispatch(batchActions(batch), actions.lastSerialId);
         }
 
-        return userActionsDispatchers.reduce((res, d) => ({
-          ...res,
-          [d.name]: d.fn.bind(null, session),
-        }), {});
+        return {
+          execute: (name, ...args) => {
+            const action = getUserAction(name);
+            if (!action) {
+              throw new Error(`User action ${name} is not recognized`);
+            }
+
+            store.dispatch(action(session, ...args));
+          },
+        };
       };
 
       /**
